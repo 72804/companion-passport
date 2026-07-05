@@ -24,6 +24,7 @@ export const ANALYTICS_EVENTS = {
   EXPORT_DATA_CLICKED: "export_data_clicked",
   CLEAR_DATA_CLICKED: "clear_data_clicked",
   FEEDBACK_SUBMITTED: "feedback_submitted",
+  DEBUG_TEST_EVENT: "debug_test_event",
   BETA_PAGE_VIEWED: "beta_page_viewed",
   BETA_START_CLICKED: "beta_start_clicked",
   BETA_CHECKLIST_STEP_COMPLETED: "beta_checklist_step_completed",

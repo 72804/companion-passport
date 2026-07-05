@@ -42,6 +42,11 @@ interface MetricsData {
   eventsOverTime: { date: string; count: number }[];
   betaSummary: BetaSummary;
   interpretation: { strong: string[]; attention: string[]; insufficient: string[] };
+  debug: {
+    totalEventCount: number;
+    debugTestEventCount: number;
+    latestEvents: { event_name: string; created_at: string; page_path: string | null }[];
+  };
 }
 
 function pct(value: number, hasDenominator: boolean): string {
@@ -179,11 +184,61 @@ export function AdminMetricsPage() {
             <Card className="mb-6 border-amber-500/20 bg-amber-500/5">
               <CardTitle>No analytics events yet</CardTitle>
               <CardDescription className="mt-2">
-                Events appear after testers use the app with Supabase configured. Share the
-                beta page at <code className="text-violet-400">/beta</code> to onboard testers.
+                Events appear after testers use the app with Supabase configured. Use Settings
+                → Analytics debug to send a test event, or share{" "}
+                <code className="text-violet-400">/beta</code> with testers.
               </CardDescription>
             </Card>
           )}
+
+          <Card className="mb-6 border-white/10">
+            <CardTitle>Event stream debug</CardTitle>
+            <CardDescription className="mb-4">
+              Quick confirmation that events are reaching Supabase
+            </CardDescription>
+            <div className="grid sm:grid-cols-3 gap-4 mb-4">
+              <div className="rounded-xl bg-white/5 px-4 py-3">
+                <p className="text-xs text-zinc-500">Total events (90d)</p>
+                <p className="text-2xl font-bold text-white">{metrics.debug.totalEventCount}</p>
+              </div>
+              <div className="rounded-xl bg-white/5 px-4 py-3">
+                <p className="text-xs text-zinc-500">debug_test_event</p>
+                <p className="text-2xl font-bold text-white">
+                  {metrics.debug.debugTestEventCount}
+                </p>
+              </div>
+            </div>
+            {metrics.debug.latestEvents.length === 0 ? (
+              <p className="text-sm text-zinc-500">No events recorded yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="text-zinc-500 border-b border-white/5">
+                      <th className="py-2 pr-4 font-medium">Event</th>
+                      <th className="py-2 pr-4 font-medium">Page</th>
+                      <th className="py-2 font-medium">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {metrics.debug.latestEvents.map((ev, i) => (
+                      <tr key={`${ev.event_name}-${ev.created_at}-${i}`} className="border-b border-white/5">
+                        <td className="py-2 pr-4 text-zinc-200 font-mono text-xs">
+                          {ev.event_name}
+                        </td>
+                        <td className="py-2 pr-4 text-zinc-400 text-xs">
+                          {ev.page_path ?? "—"}
+                        </td>
+                        <td className="py-2 text-zinc-400 text-xs whitespace-nowrap">
+                          {new Date(ev.created_at).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
 
           <Card className="mb-6 border-violet-500/20">
             <CardTitle>Beta readiness summary</CardTitle>

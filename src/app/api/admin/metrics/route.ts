@@ -6,6 +6,7 @@ interface AnalyticsRow {
   event_properties: Record<string, unknown>;
   user_id: string | null;
   anonymous_id: string | null;
+  page_path: string | null;
   created_at: string;
 }
 
@@ -162,7 +163,7 @@ export async function POST(request: Request) {
 
   const { data: events, error: eventsError } = await supabase!
     .from("analytics_events")
-    .select("event_name, event_properties, user_id, anonymous_id, created_at")
+    .select("event_name, event_properties, user_id, anonymous_id, page_path, created_at")
     .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false });
 
@@ -262,5 +263,14 @@ export async function POST(request: Request) {
     eventsOverTime: eventsOverTime(rows, 14),
     betaSummary,
     interpretation,
+    debug: {
+      totalEventCount: rows.length,
+      debugTestEventCount: countEvents(rows, "debug_test_event"),
+      latestEvents: rows.slice(0, 10).map((r) => ({
+        event_name: r.event_name,
+        created_at: r.created_at,
+        page_path: r.page_path,
+      })),
+    },
   });
 }

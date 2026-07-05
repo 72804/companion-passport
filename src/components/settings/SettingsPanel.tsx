@@ -12,6 +12,7 @@ import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { track } from "@/lib/analytics/track";
 import { BETA_DISCLAIMER } from "@/lib/constants/beta";
 import { EnvWarnings } from "@/components/ui/EnvWarnings";
+import { AnalyticsDebugPanel } from "@/components/settings/AnalyticsDebugPanel";
 
 export function SettingsPanel() {
   const {
@@ -73,6 +74,8 @@ export function SettingsPanel() {
       </div>
 
       <EnvWarnings context="settings" />
+
+      <AnalyticsDebugPanel />
 
       <Card>
         <CardTitle>Account</CardTitle>
