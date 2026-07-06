@@ -32,6 +32,7 @@ export function createDefaultAppData(): AppData {
     settings: {
       mockAiMode: true,
       aiProvider: "mock",
+      reminderPreference: "none",
     },
   };
 }
@@ -73,6 +74,7 @@ function migrateLegacyData(parsed: Partial<AppData>): AppData {
     settings: {
       ...defaults.settings,
       ...parsed.settings,
+      reminderPreference: parsed.settings?.reminderPreference ?? "none",
     },
   };
 }

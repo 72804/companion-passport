@@ -10,14 +10,18 @@ import { track } from "@/lib/analytics/track";
 import { markChecklistStep } from "@/lib/beta/checklist";
 import { useAuth } from "@/context/AuthContext";
 import {
+  DEPOSIT_OPTIONS,
   PRICE_RANGES,
   ROBOT_BEHAVIORS,
+  ROBOT_FORM_FACTORS,
   ROBOT_TYPES,
 } from "@/lib/constants";
 import type {
+  DepositOption,
   DepositWillingness,
   PriceRange,
   RobotBehavior,
+  RobotFormFactor,
   RobotType,
   WaitlistEntry,
 } from "@/lib/types";
@@ -32,9 +36,14 @@ export function WaitlistForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [robotType, setRobotType] = useState<RobotType>("desktop cute robot");
+  const [formFactor, setFormFactor] = useState<RobotFormFactor>("desktop robot");
   const [priceRange, setPriceRange] = useState<PriceRange>("$100–$300");
+  const [realisticPrice, setRealisticPrice] = useState<PriceRange>("$300–$700");
   const [deposit, setDeposit] = useState<DepositWillingness>("maybe");
+  const [depositOption, setDepositOption] = useState<DepositOption>("maybe");
   const [behaviors, setBehaviors] = useState<RobotBehavior[]>([]);
+  const [buyMotivators, setBuyMotivators] = useState("");
+  const [buyConcerns, setBuyConcerns] = useState("");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -47,6 +56,15 @@ export function WaitlistForm() {
     setBehaviors((prev) =>
       prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]
     );
+  };
+
+  const handleDepositOptionClick = (opt: DepositOption) => {
+    setDepositOption(opt);
+    if (opt === "yes $10" || opt === "yes $25") {
+      track(ANALYTICS_EVENTS.ROBOT_DEPOSIT_INTEREST_CLICKED, {
+        deposit_option: opt,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,14 +80,24 @@ export function WaitlistForm() {
       desiredBehaviors: behaviors,
       notes: notes.trim() || undefined,
       submittedAt: new Date().toISOString(),
+      formFactor,
+      realisticPrice,
+      depositOption,
+      buyMotivators: buyMotivators.trim() || undefined,
+      buyConcerns: buyConcerns.trim() || undefined,
     };
     await addWaitlistEntry(entry);
     track(ANALYTICS_EVENTS.ROBOT_WAITLIST_SUBMITTED, {
       waitlist_price_range: priceRange,
       deposit_interest: deposit,
       desired_behavior_count: behaviors.length,
-      has_notes: Boolean(notes.trim()),
+      has_notes: Boolean(notes.trim() || buyMotivators.trim()),
     });
+    if (depositOption === "yes $10" || depositOption === "yes $25") {
+      track(ANALYTICS_EVENTS.ROBOT_DEPOSIT_INTENT_SUBMITTED, {
+        deposit_option: depositOption,
+      });
+    }
     markChecklistStep("waitlist");
     setSubmitting(false);
     setSubmitted(true);
@@ -88,11 +116,11 @@ export function WaitlistForm() {
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
         <div className="text-4xl mb-4">✦</div>
         <h2 className="text-2xl font-bold text-white mb-4">
-          You&apos;re on the robot early-access list
+          You&apos;re on the Robot Early Access list
         </h2>
         <p className="text-zinc-400 mb-2">
-          Thank you for joining. Physical companions are experimental — we&apos;ll
-          reach out when there&apos;s progress to share.
+          Thank you for sharing your buying intent. Physical companions are experimental —
+          no payment was collected. Deposits are not enabled yet.
         </p>
         <p className="text-sm text-zinc-500">
           {user
@@ -106,9 +134,9 @@ export function WaitlistForm() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Robot Waitlist</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Robot Early Access</h1>
         <p className="text-zinc-400">
-          Help us validate demand for a physical companion. No payment required —
+          Help us validate serious interest in a physical companion. No payment required —
           this is research for a future, experimental product.
         </p>
       </div>
@@ -156,17 +184,40 @@ export function WaitlistForm() {
 
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-3">
-              Expected price range
+              Would you want your companion in…
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {ROBOT_FORM_FACTORS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFormFactor(f)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs capitalize transition-all",
+                    formFactor === f
+                      ? "border-violet-500 bg-violet-500/20 text-violet-200"
+                      : "border-white/10 bg-white/5 text-zinc-400"
+                  )}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-3">
+              How much would you realistically pay?
             </label>
             <div className="flex flex-wrap gap-2">
               {PRICE_RANGES.map((range) => (
                 <button
                   key={range}
                   type="button"
-                  onClick={() => setPriceRange(range)}
+                  onClick={() => setRealisticPrice(range)}
                   className={cn(
                     "rounded-full border px-4 py-2 text-sm transition-all",
-                    priceRange === range
+                    realisticPrice === range
                       ? "border-violet-500 bg-violet-500/20 text-violet-200"
                       : "border-white/10 bg-white/5 text-zinc-400"
                   )}
@@ -179,7 +230,33 @@ export function WaitlistForm() {
 
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-3">
-              Would you pay a deposit?
+              Would you pay a refundable deposit? (not charged today)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {DEPOSIT_OPTIONS.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => handleDepositOptionClick(d)}
+                  className={cn(
+                    "rounded-full border px-4 py-2 text-sm transition-all",
+                    depositOption === d
+                      ? "border-violet-500 bg-violet-500/20 text-violet-200"
+                      : "border-white/10 bg-white/5 text-zinc-400"
+                  )}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">
+              Deposits are not enabled. This measures serious buying intent only.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-3">
+              Legacy: general deposit interest
             </label>
             <div className="flex gap-2">
               {(["yes", "maybe", "no"] as DepositWillingness[]).map((d) => (
@@ -224,24 +301,41 @@ export function WaitlistForm() {
           </div>
 
           <Textarea
-            label="What would make you buy the robot?"
-            placeholder="Optional — tell us what would convince you..."
+            label="What would make you buy it?"
+            placeholder="What features or feelings would convince you?"
             rows={3}
+            value={buyMotivators}
+            onChange={(e) => setBuyMotivators(e.target.value)}
+          />
+
+          <Textarea
+            label="What would scare you away?"
+            placeholder="Price, privacy, dependency, hardware quality..."
+            rows={3}
+            value={buyConcerns}
+            onChange={(e) => setBuyConcerns(e.target.value)}
+          />
+
+          <Textarea
+            label="Anything else? (optional)"
+            placeholder="Additional notes..."
+            rows={2}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
 
           <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-            {submitting ? "Submitting..." : "Join Waitlist"}
+            {submitting ? "Submitting..." : "Join Robot Early Access"}
           </Button>
         </form>
       </Card>
 
       <Card className="mt-6 border-white/5">
-        <CardTitle className="text-base">About the robot upgrade</CardTitle>
+        <CardTitle className="text-base">About robot early access</CardTitle>
         <CardDescription className="mt-2">
-          Physical companions are not built yet. This waitlist helps us understand
-          interest, preferred form factors, and price sensitivity.
+          Physical companions are not built yet. This list helps us understand serious
+          buying intent, preferred form factors, and price sensitivity. No payment is
+          collected.
         </CardDescription>
       </Card>
     </div>

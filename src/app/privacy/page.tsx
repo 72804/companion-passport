@@ -52,6 +52,28 @@ export default function PrivacyPage() {
           data.
         </p>
 
+        <h2 className="text-xl font-semibold text-white">Usage tracking and plans</h2>
+        <p>
+          If you have an account, we track monthly usage such as AI messages sent,
+          memories approved, and companions created to enforce plan limits. Mock mode is
+          unlimited and does not count against AI message limits. Logged-out demo usage
+          is tracked locally on your device.
+        </p>
+
+        <h2 className="text-xl font-semibold text-white">Subscriptions and paid interest</h2>
+        <p>
+          Your plan tier (Free, Plus, Founder) and subscription status may be stored if
+          you sign up. Paid plan interest submissions (when Stripe checkout is not yet
+          live) may include optional email and reason — this is not a payment.
+        </p>
+
+        <h2 className="text-xl font-semibold text-white">Robot deposit intent</h2>
+        <p>
+          Robot early-access forms may ask about refundable deposit interest. No deposit
+          or payment is collected in this beta — we only record buying intent for product
+          research.
+        </p>
+
         <h2 className="text-xl font-semibold text-white">Waitlist data</h2>
         <p>
           Robot waitlist submissions may include name, email, preferences, and notes you

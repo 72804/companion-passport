@@ -428,6 +428,11 @@ export async function saveWaitlistEntry(
       deposit_interest: entry.depositWillingness,
       desired_behaviors: entry.desiredBehaviors,
       notes: entry.notes ?? null,
+      form_factor: entry.formFactor ?? null,
+      realistic_price: entry.realisticPrice ?? null,
+      deposit_option: entry.depositOption ?? null,
+      buy_motivators: entry.buyMotivators ?? null,
+      buy_concerns: entry.buyConcerns ?? null,
       created_at: entry.submittedAt,
     },
   ]);
@@ -455,6 +460,11 @@ export async function loadUserWaitlistEntries(
     depositWillingness: w.deposit_interest as WaitlistEntry["depositWillingness"],
     desiredBehaviors: w.desired_behaviors as WaitlistEntry["desiredBehaviors"],
     notes: w.notes ?? undefined,
+    formFactor: (w.form_factor as WaitlistEntry["formFactor"]) ?? undefined,
+    realisticPrice: (w.realistic_price as WaitlistEntry["realisticPrice"]) ?? undefined,
+    depositOption: (w.deposit_option as WaitlistEntry["depositOption"]) ?? undefined,
+    buyMotivators: w.buy_motivators ?? undefined,
+    buyConcerns: w.buy_concerns ?? undefined,
     submittedAt: w.created_at,
   }));
 }
@@ -536,7 +546,7 @@ export async function loadAppDataFromCloud(
     chatHistoryByCompanion,
     memoryReviewQueue,
     waitlistEntries,
-    settings: { mockAiMode: true, aiProvider: "mock" },
+    settings: { mockAiMode: true, aiProvider: "mock", reminderPreference: "none" },
   };
 }
 

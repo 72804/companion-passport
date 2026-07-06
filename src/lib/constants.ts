@@ -5,6 +5,7 @@ import type {
   LanguageStyle,
   MemoryCategory,
   RobotBehavior,
+  RobotFormFactor,
   RobotType,
   Tone,
 } from "./types";
@@ -70,6 +71,21 @@ export const ROBOT_BEHAVIORS: RobotBehavior[] = [
   "send voice messages",
   "wake me up / daily routines",
 ];
+
+export const ROBOT_FORM_FACTORS = [
+  "desktop robot",
+  "mobile robot",
+  "voice device",
+  "AR/avatar",
+  "not sure",
+] as const;
+
+export const DEPOSIT_OPTIONS = [
+  "yes $10",
+  "yes $25",
+  "maybe",
+  "no",
+] as const;
 
 export const DEFAULT_BOUNDARIES = {
   noSexualContent: true,

@@ -211,6 +211,69 @@ export async function POST(request: Request) {
 
   const interpretation = buildInterpretation(betaSummary);
 
+  const { data: subscriptions } = await supabase!
+    .from("user_subscriptions")
+    .select("plan_id");
+
+  const planBreakdown: Record<string, number> = {};
+  for (const s of subscriptions ?? []) {
+    const key = s.plan_id ?? "free";
+    planBreakdown[key] = (planBreakdown[key] ?? 0) + 1;
+  }
+
+  const { data: paidInterest } = await supabase!
+    .from("paid_plan_interest")
+    .select("plan_id")
+    .gte("created_at", since.toISOString());
+
+  const paidInterestByPlan: Record<string, number> = {};
+  for (const p of paidInterest ?? []) {
+    paidInterestByPlan[p.plan_id] = (paidInterestByPlan[p.plan_id] ?? 0) + 1;
+  }
+
+  const { data: usageRows } = await supabase!
+    .from("usage_events")
+    .select("event_type, quantity, created_at")
+    .gte("created_at", since.toISOString());
+
+  const aiUsageByDay: { date: string; count: number }[] = [];
+  const now = new Date();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const dayStart = new Date(dateStr);
+    const dayEnd = new Date(dateStr);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const count = (usageRows ?? [])
+      .filter((r) => {
+        if (r.event_type !== "ai_message_sent") return false;
+        const t = new Date(r.created_at);
+        return t >= dayStart && t < dayEnd;
+      })
+      .reduce((sum, r) => sum + (r.quantity ?? 1), 0);
+    aiUsageByDay.push({ date: dateStr, count });
+  }
+
+  const memoryApprovalsFromUsage = (usageRows ?? [])
+    .filter((r) => r.event_type === "memory_approved")
+    .reduce((sum, r) => sum + (r.quantity ?? 1), 0);
+
+  const { data: waitlistDeposit } = await supabase!
+    .from("robot_waitlist")
+    .select("deposit_option, deposit_interest");
+
+  const depositIntentBreakdown: Record<string, number> = {};
+  for (const w of waitlistDeposit ?? []) {
+    const key = w.deposit_option ?? w.deposit_interest ?? "unknown";
+    depositIntentBreakdown[key] = (depositIntentBreakdown[key] ?? 0) + 1;
+  }
+
+  const usageLimitHits = countEvents(rows, "usage_limit_reached");
+  const pricingViewed = countEvents(rows, "pricing_viewed");
+  const upgradeClicked = countEvents(rows, "upgrade_clicked");
+  const paidInterestSubmitted = countEvents(rows, "paid_plan_interest_submitted");
+
   const depositBreakdown: Record<string, number> = {};
   for (const w of waitlist ?? []) {
     const key = w.deposit_interest ?? "unknown";
@@ -271,6 +334,22 @@ export async function POST(request: Request) {
         created_at: r.created_at,
         page_path: r.page_path,
       })),
+    },
+    billing: {
+      planBreakdown,
+      usageLimitHits,
+      paidPlanInterestCount: (paidInterest ?? []).length,
+      paidInterestByPlan,
+      depositIntentBreakdown,
+      aiUsageByDay,
+      memoryApprovalsFromUsage,
+      pricingViewed,
+      upgradeClicked,
+      paidInterestSubmitted,
+      freeToPaidInterestRate:
+        pricingViewed > 0
+          ? Math.round((paidInterestSubmitted / pricingViewed) * 100)
+          : 0,
     },
   });
 }

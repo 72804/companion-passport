@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/chat", label: "Chat" },
   { href: "/passport", label: "Passport" },
   { href: "/waitlist", label: "Waitlist" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/settings", label: "Settings" },
 ];
 

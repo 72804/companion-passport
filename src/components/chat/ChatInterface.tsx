@@ -3,15 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MemoryReviewPanel } from "./MemoryReviewPanel";
+import { ChatPassportPreview } from "./ChatPassportPreview";
+import { UpgradePromptCard } from "@/components/billing/UpgradePromptCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useApp } from "@/context/AppContext";
+import { useBilling, trackUsageLimitReached } from "@/context/BillingContext";
+import { useAuth } from "@/context/AuthContext";
 import { sendChatMessageWithStreaming } from "@/lib/ai/chatClient";
 import { ANALYTICS_EVENTS, messageCountBucket } from "@/lib/analytics/events";
 import { track } from "@/lib/analytics/track";
 import { AVATAR_STYLES } from "@/lib/constants";
 import { detectMemoriesFromMessage } from "@/lib/memory-detection";
 import type { ChatMessage } from "@/lib/types";
+import type { LimitCheckResult } from "@/lib/billing/usage";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -30,12 +35,29 @@ export function ChatInterface() {
     hydrated,
   } = useApp();
 
+  const { user } = useAuth();
+  const {
+    planId,
+    plan,
+    usage,
+    aiRemaining,
+    canSendAiMessage,
+    canApproveMemory,
+    recordUsage,
+  } = useBilling();
+
   const [input, setInput] = useState("");
   const [isResponding, setIsResponding] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
   const [usedFallback, setUsedFallback] = useState(false);
+  const [limitPrompt, setLimitPrompt] = useState<Extract<
+    LimitCheckResult,
+    { allowed: false }
+  > | null>(null);
+  const [retentionNote, setRetentionNote] = useState(false);
+  const [dismissedUpgrade, setDismissedUpgrade] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const profile = data.passport.profile;
 
@@ -76,9 +98,39 @@ export function ChatInterface() {
 
   const avatar = AVATAR_STYLES.find((a) => a.id === profile.avatarStyle);
 
+  const handleApproveMemory = (
+    id: string,
+    editedText?: string,
+    options?: { replaceExistingId?: string }
+  ) => {
+    const check = canApproveMemory();
+    if (!check.allowed) {
+      trackUsageLimitReached("memory", planId);
+      setLimitPrompt(check);
+      return;
+    }
+    approveMemorySuggestion(id, editedText, options);
+    void recordUsage("memory_approved");
+    setRetentionNote(true);
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isResponding) return;
+
+    const limitCheck = canSendAiMessage(isMockMode);
+    if (!limitCheck.allowed) {
+      const limitType =
+        limitCheck.reason === "demo_limit" ? "demo" : "ai";
+      trackUsageLimitReached(limitType, planId);
+      track(ANALYTICS_EVENTS.USAGE_LIMIT_REACHED, {
+        limit_type: limitType,
+        plan_id: planId,
+      });
+      setLimitPrompt(limitCheck);
+      setDismissedUpgrade(false);
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -92,12 +144,17 @@ export function ChatInterface() {
     setInput("");
     setFallbackNotice(null);
     setUsedFallback(false);
+    setLimitPrompt(null);
 
     track(ANALYTICS_EVENTS.CHAT_MESSAGE_SENT, {
       mode: isMockMode ? "mock" : "ai",
       provider: data.settings.aiProvider,
       message_count_bucket: messageCountBucket(messagesWithUser.length),
     });
+
+    if (!isMockMode) {
+      void recordUsage("ai_message_sent");
+    }
 
     const detected = detectMemoriesFromMessage(text);
     if (detected.length > 0) {
@@ -171,6 +228,10 @@ export function ChatInterface() {
           } else {
             updateChatMessage(assistantId, result.message);
           }
+
+          if (messagesWithUser.length >= 3) {
+            setRetentionNote(true);
+          }
         },
       }
     );
@@ -189,9 +250,11 @@ export function ChatInterface() {
     }
   };
 
+  const showUpgrade =
+    limitPrompt && !dismissedUpgrade && !isMockMode;
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] max-w-3xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-4 px-4 py-4 border-b border-white/10">
         <div
           className={cn(
@@ -207,8 +270,11 @@ export function ChatInterface() {
             <Badge variant={isMockMode ? "default" : "emerald"}>
               {isMockMode ? "Mock mode" : "AI mode"}
             </Badge>
-            {usedFallback && (
-              <Badge variant="amber">Fallback used</Badge>
+            {usedFallback && <Badge variant="amber">Fallback used</Badge>}
+            {!isMockMode && (
+              <Badge variant="violet">
+                {aiRemaining} AI msgs left
+              </Badge>
             )}
           </div>
           <div className="flex flex-wrap gap-1.5 mt-1">
@@ -229,7 +295,37 @@ export function ChatInterface() {
         </div>
       </div>
 
-      {/* Messages */}
+      <ChatPassportPreview
+        memories={data.passport.memories}
+        onAddMemory={() => {
+          window.location.href = "/passport";
+        }}
+      />
+
+      {showUpgrade && (
+        <UpgradePromptCard
+          limitResult={limitPrompt}
+          planId={planId}
+          onDismiss={() => setDismissedUpgrade(true)}
+        />
+      )}
+
+      {retentionNote && (
+        <div className="mx-4 mb-3 rounded-xl border border-violet-500/20 bg-violet-500/5 px-4 py-3 text-sm text-violet-200/90 flex items-start justify-between gap-2">
+          <p>
+            Your companion will feel more personalized as you add approved memories.
+            Come back tomorrow to keep building your Passport.
+          </p>
+          <button
+            type="button"
+            onClick={() => setRetentionNote(false)}
+            className="text-violet-400/60 hover:text-violet-300 shrink-0"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {chatMessages.length === 0 && (
           <div className="text-center py-16 px-6">
@@ -242,6 +338,11 @@ export function ChatInterface() {
             <p className="text-zinc-600 text-xs mt-3">
               Try: &ldquo;I like dark Afro house&rdquo; or &ldquo;call me Alex&rdquo;
             </p>
+            {!user && (
+              <p className="text-amber-400/80 text-xs mt-4">
+                Demo: {usage.aiMessages}/5 AI messages without an account. Mock mode is unlimited.
+              </p>
+            )}
           </div>
         )}
         {chatMessages.map((msg) => {
@@ -284,16 +385,14 @@ export function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Memory review queue */}
       <MemoryReviewPanel
         suggestions={data.memoryReviewQueue}
-        onApprove={approveMemorySuggestion}
+        onApprove={handleApproveMemory}
         onIgnore={ignoreMemorySuggestion}
         onUpdateText={updateMemorySuggestion}
         checkDuplicate={checkMemoryDuplicate}
       />
 
-      {/* Input */}
       <div className="border-t border-white/10 p-4 bg-zinc-950/50">
         {fallbackNotice && (
           <p className="text-xs text-amber-400/80 mb-2 text-center">{fallbackNotice}</p>
@@ -319,8 +418,8 @@ export function ChatInterface() {
         <p className="text-xs text-zinc-600 mt-2 text-center">
           Enter to send · Shift+Enter for newline ·{" "}
           {isMockMode
-            ? "Mock mode"
-            : `AI mode (${data.settings.aiProvider})`}
+            ? "Mock mode (unlimited)"
+            : `AI mode (${data.settings.aiProvider}) · ${plan.name} plan`}
         </p>
       </div>
     </div>

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useApp } from "@/context/AppContext";
+import { useBilling, trackUsageLimitReached } from "@/context/BillingContext";
+import { UpgradePromptCard } from "@/components/billing/UpgradePromptCard";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { track } from "@/lib/analytics/track";
 import {
@@ -27,8 +29,10 @@ const STEPS = ["Identity", "Personality", "Boundaries", "Avatar"];
 
 export function CreateCompanionForm() {
   const router = useRouter();
-  const { setProfile } = useApp();
+  const { setProfile, data } = useApp();
+  const { canCreateCompanion, planId, recordUsage } = useBilling();
   const [step, setStep] = useState(0);
+  const [limitBlocked, setLimitBlocked] = useState(false);
 
   const [name, setName] = useState("");
   const [type, setType] = useState<CompanionType>("Friend");
@@ -47,6 +51,13 @@ export function CreateCompanionForm() {
   };
 
   const handleSubmit = () => {
+    const check = canCreateCompanion();
+    if (data.passport.profile && !check.allowed) {
+      trackUsageLimitReached("companion", planId);
+      setLimitBlocked(true);
+      return;
+    }
+
     const profile = {
       id: crypto.randomUUID(),
       name: name.trim(),
@@ -58,6 +69,7 @@ export function CreateCompanionForm() {
       createdAt: new Date().toISOString(),
     };
     setProfile(profile);
+    void recordUsage("companion_created");
     track(ANALYTICS_EVENTS.COMPANION_CREATION_COMPLETED, {
       companion_type: type,
       tone,
@@ -75,6 +87,16 @@ export function CreateCompanionForm() {
           Define your companion&apos;s identity. You can adjust everything later in your Passport.
         </p>
       </div>
+
+      {limitBlocked && (
+        <div className="mb-6">
+          <UpgradePromptCard
+            limitResult={{ allowed: false, reason: "companion_limit" }}
+            planId={planId}
+            onDismiss={() => setLimitBlocked(false)}
+          />
+        </div>
+      )}
 
       {/* Progress */}
       <div className="flex gap-2 mb-8">

@@ -120,6 +120,11 @@ export interface Database {
           deposit_interest: string;
           desired_behaviors: string[];
           notes: string | null;
+          form_factor: string | null;
+          realistic_price: string | null;
+          deposit_option: string | null;
+          buy_motivators: string | null;
+          buy_concerns: string | null;
           created_at: string;
         };
         Insert: {
@@ -132,6 +137,11 @@ export interface Database {
           deposit_interest: string;
           desired_behaviors?: string[];
           notes?: string | null;
+          form_factor?: string | null;
+          realistic_price?: string | null;
+          deposit_option?: string | null;
+          buy_motivators?: string | null;
+          buy_concerns?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["robot_waitlist"]["Insert"]>;
@@ -183,6 +193,78 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["feedback"]["Insert"]>;
+        Relationships: [];
+      };
+      user_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          plan_id: string;
+          status: string;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          current_period_start: string | null;
+          current_period_end: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          plan_id?: string;
+          status?: string;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_subscriptions"]["Insert"]>;
+        Relationships: [];
+      };
+      usage_events: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          anonymous_id: string | null;
+          event_type: string;
+          quantity: number;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          anonymous_id?: string | null;
+          event_type: string;
+          quantity?: number;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["usage_events"]["Insert"]>;
+        Relationships: [];
+      };
+      paid_plan_interest: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          anonymous_id: string | null;
+          email: string | null;
+          plan_id: string;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          anonymous_id?: string | null;
+          email?: string | null;
+          plan_id: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["paid_plan_interest"]["Insert"]>;
         Relationships: [];
       };
     };

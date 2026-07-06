@@ -13,6 +13,8 @@ import { track } from "@/lib/analytics/track";
 import { BETA_DISCLAIMER } from "@/lib/constants/beta";
 import { EnvWarnings } from "@/components/ui/EnvWarnings";
 import { AnalyticsDebugPanel } from "@/components/settings/AnalyticsDebugPanel";
+import { useBilling } from "@/context/BillingContext";
+import type { ReminderPreference } from "@/lib/types";
 
 export function SettingsPanel() {
   const {
@@ -25,6 +27,7 @@ export function SettingsPanel() {
     hydrated,
   } = useApp();
   const { user, email, signOut, supabaseReady, setDataMode } = useAuth();
+  const { plan, usage } = useBilling();
   const [deleting, setDeleting] = useState(false);
 
   if (!hydrated) {
@@ -76,6 +79,42 @@ export function SettingsPanel() {
       <EnvWarnings context="settings" />
 
       <AnalyticsDebugPanel />
+
+      <Card>
+        <CardTitle>Your plan</CardTitle>
+        <CardDescription className="mb-4">
+          {plan.name} — {usage.aiMessages}/{plan.limits.aiMessagesPerMonth} AI messages
+          used this month (mock mode unlimited).
+        </CardDescription>
+        <Link href="/pricing">
+          <Button variant="secondary" size="sm">
+            View plans
+          </Button>
+        </Link>
+      </Card>
+
+      <Card>
+        <CardTitle>Daily reminder preference</CardTitle>
+        <CardDescription className="mb-4">
+          Optional check-in preference (no emails or push notifications yet — stored for
+          when reminders launch).
+        </CardDescription>
+        <select
+          value={data.settings.reminderPreference ?? "none"}
+          onChange={(e) => {
+            const pref = e.target.value as ReminderPreference;
+            updateSettings({ reminderPreference: pref });
+            track(ANALYTICS_EVENTS.REMINDER_PREFERENCE_SET, {
+              reminder_preference: pref,
+            });
+          }}
+          className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-2.5 text-white text-sm"
+        >
+          <option value="none">No reminders</option>
+          <option value="morning">Morning check-in</option>
+          <option value="evening">Evening check-in</option>
+        </select>
+      </Card>
 
       <Card>
         <CardTitle>Account</CardTitle>

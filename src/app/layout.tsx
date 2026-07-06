@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { AppProvider } from "@/context/AppContext";
+import { BillingProvider } from "@/context/BillingContext";
 import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
@@ -34,7 +35,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
         <AuthProvider>
           <AppProvider>
-            <AppShell>{children}</AppShell>
+            <BillingProvider>
+              <AppShell>{children}</AppShell>
+            </BillingProvider>
           </AppProvider>
         </AuthProvider>
       </body>

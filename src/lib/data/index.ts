@@ -39,15 +39,18 @@ export {
 const SETTINGS_KEY = "companion-passport-settings";
 
 export function loadSettings(): AppSettings {
-  if (typeof window === "undefined") {
-    return { mockAiMode: true, aiProvider: "mock" };
-  }
+  const defaults: AppSettings = {
+    mockAiMode: true,
+    aiProvider: "mock",
+    reminderPreference: "none",
+  };
+  if (typeof window === "undefined") return defaults;
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return { mockAiMode: true, aiProvider: "mock" };
-    return JSON.parse(raw) as AppSettings;
+    if (!raw) return defaults;
+    return { ...defaults, ...JSON.parse(raw) };
   } catch {
-    return { mockAiMode: true, aiProvider: "mock" };
+    return defaults;
   }
 }
 

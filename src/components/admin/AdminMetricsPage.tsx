@@ -47,6 +47,19 @@ interface MetricsData {
     debugTestEventCount: number;
     latestEvents: { event_name: string; created_at: string; page_path: string | null }[];
   };
+  billing: {
+    planBreakdown: Record<string, number>;
+    usageLimitHits: number;
+    paidPlanInterestCount: number;
+    paidInterestByPlan: Record<string, number>;
+    depositIntentBreakdown: Record<string, number>;
+    aiUsageByDay: { date: string; count: number }[];
+    memoryApprovalsFromUsage: number;
+    pricingViewed: number;
+    upgradeClicked: number;
+    paidInterestSubmitted: number;
+    freeToPaidInterestRate: number;
+  };
 }
 
 function pct(value: number, hasDenominator: boolean): string {
@@ -379,6 +392,58 @@ export function AdminMetricsPage() {
               }}
             />
           </Card>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <Card>
+              <CardTitle>Billing & monetization</CardTitle>
+              <CardDescription className="mb-4">Plans, limits, and paid interest</CardDescription>
+              <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                <div className="rounded-lg bg-white/5 px-3 py-2">
+                  <p className="text-xs text-zinc-500">Usage limit hits</p>
+                  <p className="text-lg font-bold text-white">
+                    {metrics.billing.usageLimitHits}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white/5 px-3 py-2">
+                  <p className="text-xs text-zinc-500">Paid interest</p>
+                  <p className="text-lg font-bold text-white">
+                    {metrics.billing.paidPlanInterestCount}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white/5 px-3 py-2">
+                  <p className="text-xs text-zinc-500">Pricing views</p>
+                  <p className="text-lg font-bold text-white">
+                    {metrics.billing.pricingViewed}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white/5 px-3 py-2">
+                  <p className="text-xs text-zinc-500">Interest conversion</p>
+                  <p className="text-lg font-bold text-white">
+                    {metrics.billing.freeToPaidInterestRate}%
+                  </p>
+                </div>
+              </div>
+              <BarChart label="Plan breakdown" data={metrics.billing.planBreakdown} />
+              <div className="mt-4">
+                <BarChart
+                  label="Paid interest by plan"
+                  data={metrics.billing.paidInterestByPlan}
+                />
+              </div>
+              <div className="mt-4">
+                <BarChart
+                  label="Robot deposit intent"
+                  data={metrics.billing.depositIntentBreakdown}
+                />
+              </div>
+            </Card>
+            <Card>
+              <BarChart label="AI usage by day (14d)" data={metrics.billing.aiUsageByDay} />
+              <p className="text-xs text-zinc-500 mt-4">
+                Memory approvals (usage_events): {metrics.billing.memoryApprovalsFromUsage}
+              </p>
+            </Card>
+          </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <Card>

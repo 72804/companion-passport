@@ -57,9 +57,17 @@ export default function TermsPage() {
 
         <h2 className="text-xl font-semibold text-white">Robot waitlist</h2>
         <p>
-          Joining the robot waitlist expresses interest in a possible future product. It
-          does not guarantee availability, pricing, timing, or features. Physical
-          companions remain exploratory.
+          Joining the robot early-access list expresses interest in a possible future
+          product. It does not guarantee availability, pricing, timing, or features.
+          Physical companions remain exploratory. Deposit intent questions are research
+          only — no payment is collected.
+        </p>
+
+        <h2 className="text-xl font-semibold text-white">Paid plans</h2>
+        <p>
+          Plus and Founder plans may be offered in the future. If Stripe checkout is not
+          live, joining a paid interest list is not a purchase or subscription. Plan
+          limits (AI messages, memories, companions) apply to your current tier.
         </p>
 
         <p className="text-zinc-500 pt-4">

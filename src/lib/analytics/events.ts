@@ -29,6 +29,13 @@ export const ANALYTICS_EVENTS = {
   BETA_START_CLICKED: "beta_start_clicked",
   BETA_CHECKLIST_STEP_COMPLETED: "beta_checklist_step_completed",
   BETA_CHECKLIST_DISMISSED: "beta_checklist_dismissed",
+  PRICING_VIEWED: "pricing_viewed",
+  UPGRADE_CLICKED: "upgrade_clicked",
+  PAID_PLAN_INTEREST_SUBMITTED: "paid_plan_interest_submitted",
+  USAGE_LIMIT_REACHED: "usage_limit_reached",
+  ROBOT_DEPOSIT_INTEREST_CLICKED: "robot_deposit_interest_clicked",
+  ROBOT_DEPOSIT_INTENT_SUBMITTED: "robot_deposit_intent_submitted",
+  REMINDER_PREFERENCE_SET: "reminder_preference_set",
 } as const;
 
 export type AnalyticsEventName =
@@ -55,6 +62,10 @@ export type SafeEventProperties = {
   source?: string;
   checklist_step?: string;
   feedback_category?: string;
+  plan_id?: string;
+  limit_type?: string;
+  deposit_option?: string;
+  reminder_preference?: string;
 };
 
 const FORBIDDEN_PROPERTY_KEYS = new Set([

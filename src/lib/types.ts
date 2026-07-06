@@ -131,6 +131,19 @@ export type RobotBehavior =
   | "send voice messages"
   | "wake me up / daily routines";
 
+export type DepositOption =
+  | "yes $10"
+  | "yes $25"
+  | "maybe"
+  | "no";
+
+export type RobotFormFactor =
+  | "desktop robot"
+  | "mobile robot"
+  | "voice device"
+  | "AR/avatar"
+  | "not sure";
+
 export interface WaitlistEntry {
   id: string;
   name: string;
@@ -141,6 +154,11 @@ export interface WaitlistEntry {
   desiredBehaviors: RobotBehavior[];
   notes?: string;
   submittedAt: string;
+  formFactor?: RobotFormFactor;
+  realisticPrice?: PriceRange;
+  depositOption?: DepositOption;
+  buyMotivators?: string;
+  buyConcerns?: string;
 }
 
 export type AiProvider =
@@ -150,9 +168,12 @@ export type AiProvider =
   | "gemini"
   | "mock";
 
+export type ReminderPreference = "morning" | "evening" | "none";
+
 export interface AppSettings {
   mockAiMode: boolean;
   aiProvider: AiProvider;
+  reminderPreference: ReminderPreference;
 }
 
 export interface ChatRequestPayload {
